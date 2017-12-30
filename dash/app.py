@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import functools
 import os
 
 import dash
@@ -24,8 +23,9 @@ app.css.append_css({
 
 kickstarter_df = pd.read_csv(os.path.join('..', 'kickstarter-cleaned.csv'), parse_dates=True)
 kickstarter_df['broader_category'] = kickstarter_df['category_slug'].str.split('/').str.get(0)
-kickstarter_df_sub = kickstarter_df.sample(10000)
 kickstarter_df['created_at'] = pd.to_datetime(kickstarter_df['created_at'])
+
+kickstarter_df_sub = kickstarter_df.sample(10000)
 
 
 CATEGORIES = kickstarter_df['broader_category'].unique()
