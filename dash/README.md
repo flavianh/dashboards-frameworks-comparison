@@ -11,3 +11,5 @@ The events linking those widgets are:
 - Multi selection box -> scatter plot
 - Multi selection box -> bar graph
 - Selection on the scatter plot -> bar graph
+
+Run the example locally using `python app.py` (Python 3).
