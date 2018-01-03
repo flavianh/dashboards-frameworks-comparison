@@ -1,4 +1,4 @@
-# Kickstarter Dashboard in Dash
+# Kickstarter Dashboard in Bokeh
 
 This dashboard contains three widgets:
 
@@ -12,4 +12,4 @@ The events linking those widgets are:
 - Multi selection box -> bar graph
 - Selection on the scatter plot -> bar graph
 
-Run the dashboard using the command `python app.py`.
+Run the dashboard using the command `bokeh serve app.py`.
