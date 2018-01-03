@@ -4,7 +4,7 @@ dash-html-components==0.8.0
 dash-core-components==0.13.0
 dash-table-experiments==0.5.0
 iso3166
-pandas
-plotly
+pandas==0.20.3
+plotly==2.0.12
 scipy
 wordcloud
