@@ -12,4 +12,4 @@ The events linking those widgets are:
 - Multi selection box -> bar graph
 - Selection on the scatter plot -> bar graph
 
-Run the dashboard using the command `python app.py`.
+Run the example locally using `python app.py` (Python 3).
