@@ -36,6 +36,15 @@ title = Div(text='<h1 style="text-align: center">Kickstarter Dashboard</h1>')
 # This looks better than the multiselect widget
 select = CheckboxButtonGroup(labels=CATEGORIES.tolist())
 
-layout = column(title, select, sizing_mode='scale_width')
+
+data = {'x': kickstarter_df_sub['created_at'],
+        'y': kickstarter_df_sub['usd_pledged']}
+
+source = ColumnDataSource(data=data)
+
+p = figure(y_axis_type='log')
+p.circle(x='x', y='y', source=source)
+
+layout = column(title, select, p, sizing_mode='scale_width')
 
 curdoc().add_root(layout)
