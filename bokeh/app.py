@@ -32,27 +32,25 @@ COLUMNS = ['launched_at', 'deadline', 'blurb', 'usd_pledged', 'state', 'spotligh
 COLORS = ['#7DFB6D', '#C7B815', '#D4752E', '#C7583F']
 STATES = ['successful', 'suspended', 'failed', 'canceled']
 
-COLORS_DICT = dict(zip(STATES, COLORS))
-
 title = Div(text='<h1 style="text-align: center">Kickstarter Dashboard</h1>')
 
 # This looks better than the multiselect widget
 select = CheckboxButtonGroup(labels=CATEGORIES.tolist())
 
-data = {
-    'x': kickstarter_df_sub['created_at'],
-    'y': kickstarter_df_sub['usd_pledged'],
-    'color': kickstarter_df_sub['state'].map(lambda state: COLORS_DICT[state]),
-}
-
-source = ColumnDataSource(data=data)
-
 p = figure(plot_height=250, y_axis_type='log', x_axis_type='datetime')
-p.circle(x='x', y='y', line_color='white', fill_color='color', alpha=0.7, size=15, source=source)
+
+for color, state in zip(COLORS, STATES):
+    data = {
+        'x': kickstarter_df_sub[kickstarter_df_sub.state == state]['created_at'],
+        'y': kickstarter_df_sub[kickstarter_df_sub.state == state]['usd_pledged'],
+    }
+    source = ColumnDataSource(data=data)
+    p.circle(x='x', y='y', line_color='white', fill_color=color, alpha=0.7, size=15, legend=state, source=source)
 p.xaxis.axis_label = 'Date'
 p.yaxis.axis_label = 'USD pledged'
 # See http://bokeh.pydata.org/en/latest/docs/reference/models/formatters.html for all formatters
 p.yaxis.formatter = NumeralTickFormatter(format='0a')
+p.legend.click_policy = 'hide'
 
 layout = column(title, select, p, sizing_mode='scale_width')
 
