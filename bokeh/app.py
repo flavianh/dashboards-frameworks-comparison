@@ -31,19 +31,23 @@ COLUMNS = ['launched_at', 'deadline', 'blurb', 'usd_pledged', 'state', 'spotligh
 COLORS = ['#7DFB6D', '#C7B815', '#D4752E', '#C7583F']
 STATES = ['successful', 'suspended', 'failed', 'canceled']
 
+COLORS_DICT = dict(zip(STATES, COLORS))
+
 title = Div(text='<h1 style="text-align: center">Kickstarter Dashboard</h1>')
 
 # This looks better than the multiselect widget
 select = CheckboxButtonGroup(labels=CATEGORIES.tolist())
 
-
-data = {'x': kickstarter_df_sub['created_at'],
-        'y': kickstarter_df_sub['usd_pledged']}
+data = {
+    'x': kickstarter_df_sub['created_at'],
+    'y': kickstarter_df_sub['usd_pledged'],
+    'color': kickstarter_df_sub['state'].map(lambda state: COLORS_DICT[state]),
+}
 
 source = ColumnDataSource(data=data)
 
 p = figure(y_axis_type='log')
-p.circle(x='x', y='y', source=source)
+p.circle(x='x', y='y', line_color='white', fill_color='color', fill_alpha=0.7, size=15, source=source)
 
 layout = column(title, select, p, sizing_mode='scale_width')
 
