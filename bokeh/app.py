@@ -46,8 +46,8 @@ data = {
 
 source = ColumnDataSource(data=data)
 
-p = figure(y_axis_type='log')
-p.circle(x='x', y='y', line_color='white', fill_color='color', fill_alpha=0.7, size=15, source=source)
+p = figure(plot_height=250, y_axis_type='log', x_axis_type="datetime")
+p.circle(x='x', y='y', line_color='white', fill_color='color', alpha=0, size=15, source=source)
 
 layout = column(title, select, p, sizing_mode='scale_width')
 
