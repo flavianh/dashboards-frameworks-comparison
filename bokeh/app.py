@@ -5,6 +5,7 @@ import os
 from bokeh.layouts import column
 from bokeh.models import ColumnDataSource
 from bokeh.models import HoverTool
+from bokeh.models import NumeralTickFormatter
 from bokeh.models.widgets import CheckboxButtonGroup
 from bokeh.models.widgets import Div
 from bokeh.plotting import figure
@@ -46,8 +47,12 @@ data = {
 
 source = ColumnDataSource(data=data)
 
-p = figure(plot_height=250, y_axis_type='log', x_axis_type="datetime")
-p.circle(x='x', y='y', line_color='white', fill_color='color', alpha=0, size=15, source=source)
+p = figure(plot_height=250, y_axis_type='log', x_axis_type='datetime')
+p.circle(x='x', y='y', line_color='white', fill_color='color', alpha=0.7, size=15, source=source)
+p.xaxis.axis_label = 'Date'
+p.yaxis.axis_label = 'USD pledged'
+# See http://bokeh.pydata.org/en/latest/docs/reference/models/formatters.html for all formatters
+p.yaxis.formatter = NumeralTickFormatter(format='0a')
 
 layout = column(title, select, p, sizing_mode='scale_width')
 
