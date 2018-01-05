@@ -37,12 +37,20 @@ title = Div(text='<h1 style="text-align: center">Kickstarter Dashboard</h1>')
 # This looks better than the multiselect widget
 select = CheckboxButtonGroup(labels=CATEGORIES.tolist())
 
-p = figure(plot_height=250, y_axis_type='log', x_axis_type='datetime')
+hover = HoverTool(tooltips=[
+    ("Name", "@name"),
+    ("State", "@state"),
+])
+
+p = figure(plot_height=250, y_axis_type='log', x_axis_type='datetime', tools=[hover])
 
 for color, state in zip(COLORS, STATES):
+    df_by_state = kickstarter_df_sub[kickstarter_df_sub.state == state]
     data = {
-        'x': kickstarter_df_sub[kickstarter_df_sub.state == state]['created_at'],
-        'y': kickstarter_df_sub[kickstarter_df_sub.state == state]['usd_pledged'],
+        'x': df_by_state['created_at'],
+        'y': df_by_state['usd_pledged'],
+        'name': df_by_state['name'],
+        'state': [state] * len(df_by_state),
     }
     source = ColumnDataSource(data=data)
     p.circle(x='x', y='y', line_color='white', fill_color=color, alpha=0.7, size=15, legend=state, source=source)
