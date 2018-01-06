@@ -26,7 +26,7 @@ kickstarter_df['created_at'] = pd.to_datetime(kickstarter_df['created_at'])
 kickstarter_df_sub = kickstarter_df.sample(10000)
 
 
-CATEGORIES = kickstarter_df['broader_category'].unique()
+CATEGORIES = sorted(kickstarter_df['broader_category'].unique())
 COLUMNS = ['launched_at', 'deadline', 'blurb', 'usd_pledged', 'state', 'spotlight', 'staff_pick', 'category_slug', 'backers_count', 'country']
 # Picked with http://tristen.ca/hcl-picker/#/hlc/6/1.05/251C2A/E98F55
 COLORS = ['#7DFB6D', '#C7B815', '#D4752E', '#C7583F']
@@ -35,7 +35,7 @@ STATES = ['successful', 'suspended', 'failed', 'canceled']
 title = Div(text='<h1 style="text-align: center">Kickstarter Dashboard</h1>')
 
 # This looks better than the multiselect widget
-select = CheckboxButtonGroup(labels=CATEGORIES.tolist())
+select = CheckboxButtonGroup(labels=CATEGORIES)
 
 
 def get_scatterplot():
