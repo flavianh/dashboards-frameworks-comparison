@@ -37,29 +37,56 @@ title = Div(text='<h1 style="text-align: center">Kickstarter Dashboard</h1>')
 # This looks better than the multiselect widget
 select = CheckboxButtonGroup(labels=CATEGORIES.tolist())
 
-hover = HoverTool(tooltips=[
-    ("Name", "@name"),
-    ("State", "@state"),
-])
 
-p = figure(plot_height=250, y_axis_type='log', x_axis_type='datetime', tools=[hover])
+def get_scatterplot():
+    hover = HoverTool(tooltips=[
+        ("Name", "@name"),
+        ("State", "@state"),
+    ])
 
-for color, state in zip(COLORS, STATES):
-    df_by_state = kickstarter_df_sub[kickstarter_df_sub.state == state]
+    p = figure(plot_height=200, y_axis_type='log', x_axis_type='datetime', tools=[hover])
+
+    for color, state in zip(COLORS, STATES):
+        df_by_state = kickstarter_df_sub[kickstarter_df_sub.state == state]
+        data = {
+            'x': df_by_state['created_at'],
+            'y': df_by_state['usd_pledged'],
+            'name': df_by_state['name'],
+            'state': [state] * len(df_by_state),
+        }
+        source = ColumnDataSource(data=data)
+        p.circle(x='x', y='y', line_color='white', fill_color=color, alpha=0.7, size=15, legend=state, source=source)
+    p.xaxis.axis_label = 'Date'
+    p.yaxis.axis_label = 'USD pledged'
+    # See http://bokeh.pydata.org/en/latest/docs/reference/models/formatters.html for all formatters
+    p.yaxis.formatter = NumeralTickFormatter(format='0a')
+    p.legend.click_policy = 'hide'
+    p.legend.location = "top_left"
+    return p
+
+
+stacked_barchart_df = (
+    kickstarter_df['state'].groupby(kickstarter_df['broader_category'])
+    .value_counts(normalize=False)
+    .rename('count')
+)
+
+
+def get_barchart():
     data = {
-        'x': df_by_state['created_at'],
-        'y': df_by_state['usd_pledged'],
-        'name': df_by_state['name'],
-        'state': [state] * len(df_by_state),
+        'categories': CATEGORIES,
     }
-    source = ColumnDataSource(data=data)
-    p.circle(x='x', y='y', line_color='white', fill_color=color, alpha=0.7, size=15, legend=state, source=source)
-p.xaxis.axis_label = 'Date'
-p.yaxis.axis_label = 'USD pledged'
-# See http://bokeh.pydata.org/en/latest/docs/reference/models/formatters.html for all formatters
-p.yaxis.formatter = NumeralTickFormatter(format='0a')
-p.legend.click_policy = 'hide'
 
-layout = column(title, select, p, sizing_mode='scale_width')
+    # Sadly, I could not find a more efficient method to prepare a pandas array for a stacked bar chart
+    for state in STATES[::-1]:
+        data[state] = [stacked_barchart_df.loc[category, state] for category in CATEGORIES]
+
+    source = ColumnDataSource(data=data)
+    p = figure(x_range=CATEGORIES, plot_height=200)
+    p.vbar_stack(STATES, x='categories', width=0.9, color=COLORS, source=source)
+    return p
+
+
+layout = column(title, select, get_scatterplot(), get_barchart(), sizing_mode='scale_width')
 
 curdoc().add_root(layout)
