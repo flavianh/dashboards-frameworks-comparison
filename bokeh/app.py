@@ -74,6 +74,10 @@ stacked_barchart_df = (
 
 
 def get_barchart():
+    # Can't seem to be able to put the state in there or the number of student in the tooltip though
+    hover = HoverTool(tooltips=[
+        ("Category", "@categories"),
+    ])
     data = {
         'categories': CATEGORIES,
     }
@@ -83,7 +87,7 @@ def get_barchart():
         data[state] = [stacked_barchart_df.loc[category, state] for category in CATEGORIES]
 
     source = ColumnDataSource(data=data)
-    p = figure(x_range=CATEGORIES, plot_height=200)
+    p = figure(x_range=CATEGORIES, plot_height=200, tools=[hover])
     p.vbar_stack(
         STATES,
         x='categories',
@@ -91,7 +95,8 @@ def get_barchart():
         color=COLORS,
         source=source,
         legend=[value(x) for x in STATES]
-        )
+    )
+    p.yaxis.axis_label = 'Number of projects'
     return p
 
 
