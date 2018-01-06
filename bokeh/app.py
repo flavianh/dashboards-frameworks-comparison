@@ -2,6 +2,7 @@
 
 import os
 
+from bokeh.core.properties import value
 from bokeh.layouts import column
 from bokeh.models import ColumnDataSource
 from bokeh.models import HoverTool
@@ -29,8 +30,8 @@ kickstarter_df_sub = kickstarter_df.sample(10000)
 CATEGORIES = sorted(kickstarter_df['broader_category'].unique())
 COLUMNS = ['launched_at', 'deadline', 'blurb', 'usd_pledged', 'state', 'spotlight', 'staff_pick', 'category_slug', 'backers_count', 'country']
 # Picked with http://tristen.ca/hcl-picker/#/hlc/6/1.05/251C2A/E98F55
-COLORS = ['#7DFB6D', '#C7B815', '#D4752E', '#C7583F']
-STATES = ['successful', 'suspended', 'failed', 'canceled']
+COLORS = ['#7DFB6D', '#C7B815', '#D4752E', '#C7583F'][::-1]
+STATES = ['successful', 'suspended', 'failed', 'canceled'][::-1]
 
 title = Div(text='<h1 style="text-align: center">Kickstarter Dashboard</h1>')
 
@@ -78,12 +79,19 @@ def get_barchart():
     }
 
     # Sadly, I could not find a more efficient method to prepare a pandas array for a stacked bar chart
-    for state in STATES[::-1]:
+    for state in STATES:
         data[state] = [stacked_barchart_df.loc[category, state] for category in CATEGORIES]
 
     source = ColumnDataSource(data=data)
     p = figure(x_range=CATEGORIES, plot_height=200)
-    p.vbar_stack(STATES, x='categories', width=0.9, color=COLORS, source=source)
+    p.vbar_stack(
+        STATES,
+        x='categories',
+        width=0.9,
+        color=COLORS,
+        source=source,
+        legend=[value(x) for x in STATES]
+        )
     return p
 
 
