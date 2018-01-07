@@ -46,12 +46,17 @@ STATES = ['successful', 'suspended', 'failed', 'canceled'][::-1]
 
 
 def filter_categories(indexes):
-    categories_filtered = [CATEGORIES[ind] for ind in indexes] if indexes == [] else CATEGORIES
-    update_num_categories_source(categories_filtered)
-    update_usd_vs_date_source(categories_filtered)
+    categories_filtered = [CATEGORIES[ind] for ind in indexes] if indexes != [] else CATEGORIES
+    update_num_categories_source(categories_filtered, force_categories=True)
+    update_usd_vs_date_source(categories_filtered, force_categories=True)
 
 
-def update_usd_vs_date_source(categories=CATEGORIES):
+def update_usd_vs_date_source(categories=None, force_categories=False):
+    # To get the current state of the categories
+    if categories is None:
+        categories = source_num_categories.data['categories']
+    elif not force_categories:
+        categories = list(set(categories) & set(source_num_categories.data['categories']))
     df_categories = kickstarter_df_sub[kickstarter_df_sub.broader_category.isin(categories)]
     for color, state in zip(COLORS, STATES):
         df_by_state = df_categories[df_categories.state == state]
@@ -75,7 +80,12 @@ def update_on_usd_vs_date_selection(event):
         update_num_categories_source(source_num_categories.data['categories'], sub_df)
 
 
-def update_num_categories_source(categories=CATEGORIES, df=kickstarter_df):
+def update_num_categories_source(categories=None, df=kickstarter_df, force_categories=False):
+    # To get the current state of the categories
+    if categories is None:
+        categories = source_num_categories.data['categories']
+    elif not force_categories:
+        categories = list(set(categories) & set(source_num_categories.data['categories']))
     stacked_barchart_df = (
         df['state'].groupby(df['broader_category'])
             .value_counts(normalize=False)
@@ -95,6 +105,28 @@ def update_num_categories_source(categories=CATEGORIES, df=kickstarter_df):
         except KeyError:
             data[state].append(0)
     source_num_categories.data = data
+
+
+##############################################################
+#                                                            #
+#            D  A  T  A      S  O  U  R  C  E  S             #
+#                                                            #
+##############################################################
+
+sources_usd_vs_date = {state: ColumnDataSource({
+    'x': [],
+    'y': [],
+    'name': [],
+    'state': [],
+}) for state in STATES}
+
+
+source_num_categories = ColumnDataSource(data={
+    'categories': CATEGORIES
+})
+
+update_usd_vs_date_source()
+update_num_categories_source()
 
 
 ##############################################################
@@ -122,15 +154,6 @@ p_usd_vs_date = figure(
     tools=[hover_usd_vs_date, 'box_select', 'reset']
 )
 
-sources_usd_vs_date = {state: ColumnDataSource({
-    'x': [],
-    'y': [],
-    'name': [],
-    'state': [],
-}) for state in STATES}
-
-update_usd_vs_date_source()
-
 for color, state in zip(COLORS, STATES):
     p_usd_vs_date.circle(
         x='x',
@@ -154,14 +177,10 @@ p_usd_vs_date.on_event(Reset, lambda _: update_num_categories_source())
 p_usd_vs_date.on_event(SelectionGeometry, update_on_usd_vs_date_selection)
 
 
-source_num_categories = ColumnDataSource()
-
 # Can't seem to be able to put the state in there or the number of student in the tooltip though
 hover_num_categories = HoverTool(tooltips=[
     ("Category", "@categories"),
 ])
-
-update_num_categories_source()
 
 p_num_categories = figure(
     x_range=CATEGORIES,
