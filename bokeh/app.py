@@ -1,8 +1,12 @@
 # -*- coding: utf-8 -*-
 
+import datetime
+from itertools import product
 import os
 
 from bokeh.core.properties import value
+from bokeh.events import Reset
+from bokeh.events import SelectionGeometry
 from bokeh.layouts import column
 from bokeh.models import ColumnDataSource
 from bokeh.models import HoverTool
@@ -60,7 +64,7 @@ p_usd_vs_date = figure(
     plot_height=200,
     y_axis_type='log',
     x_axis_type='datetime',
-    tools=[hover_usd_vs_date, 'box_zoom', 'reset']
+    tools=[hover_usd_vs_date, 'box_select', 'reset']
 )
 
 sources_usd_vs_date = {state: ColumnDataSource({
@@ -105,29 +109,47 @@ p_usd_vs_date.legend.click_policy = 'hide'
 p_usd_vs_date.legend.location = "top_left"
 
 
-stacked_barchart_df = (
-    kickstarter_df['state'].groupby(kickstarter_df['broader_category'])
-    .value_counts(normalize=False)
-    .rename('count')
-)
+def update_num_categories_source(categories=CATEGORIES, df=kickstarter_df):
+    stacked_barchart_df = (
+        df['state'].groupby(df['broader_category'])
+            .value_counts(normalize=False)
+            .rename('count')
+    )
+
+    data = {
+        'categories': categories,
+    }
+
+    # Sadly, I could not find a more efficient method to prepare a pandas array for a stacked bar chart
+    for state, category in product(STATES, categories):
+        data.setdefault(state, [])
+
+        try:
+            data[state].append(stacked_barchart_df.loc[category, state])
+        except KeyError:
+            data[state].append(0)
+    source_num_categories.data = data
+
+
+def update_on_selection(event):
+    geometry = event.geometry
+    if geometry['type'] == 'rect':
+        x0 = datetime.datetime.fromtimestamp(geometry['x0'] / 1000)
+        x1 = datetime.datetime.fromtimestamp(geometry['x1'] / 1000)
+        y0 = geometry['y0']
+        y1 = geometry['y1']
+        sub_df = kickstarter_df[kickstarter_df.created_at.between(x0, x1) & kickstarter_df.usd_pledged.between(y0, y1)]
+        update_num_categories_source(source_num_categories.data['categories'], sub_df)
+
+
+p_usd_vs_date.on_event(Reset, lambda _: update_num_categories_source())
+p_usd_vs_date.on_event(SelectionGeometry, update_on_selection)
 
 
 # Can't seem to be able to put the state in there or the number of student in the tooltip though
 hover_num_categories = HoverTool(tooltips=[
     ("Category", "@categories"),
 ])
-
-
-def update_num_categories_source(categories=CATEGORIES):
-    data = {
-        'categories': categories,
-    }
-
-    # Sadly, I could not find a more efficient method to prepare a pandas array for a stacked bar chart
-    for state in STATES:
-        data[state] = [stacked_barchart_df.loc[category, state] for category in categories]
-    source_num_categories.data = data
-
 
 source_num_categories = ColumnDataSource()
 update_num_categories_source()
