@@ -60,6 +60,13 @@ app.layout = html.Div(children=[
 ])
 
 
+##############################################################
+#                                                            #
+#            I  N  T  E  R  A  C  T  I  O  N  S              #
+#                                                            #
+##############################################################
+
+
 @app.callback(
     dash.dependencies.Output('usd-pledged-vs-date', 'figure'),
     [
