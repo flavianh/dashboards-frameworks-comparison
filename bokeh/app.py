@@ -35,35 +35,49 @@ STATES = ['successful', 'suspended', 'failed', 'canceled'][::-1]
 
 title = Div(text='<h1 style="text-align: center">Kickstarter Dashboard</h1>')
 
+
+
+def filter_categories(indexes):
+    if indexes == []:
+        categories_filtered = CATEGORIES
+    else:
+        categories_filtered = [CATEGORIES[ind] for ind in indexes]
+    print(categories_filtered)
+
+
 # This looks better than the multiselect widget
 select = CheckboxButtonGroup(labels=CATEGORIES)
+select.on_click(filter_categories)
 
 
-def get_scatterplot():
-    hover = HoverTool(tooltips=[
-        ("Name", "@name"),
-        ("State", "@state"),
-    ])
+hover_usd_vs_date = HoverTool(tooltips=[
+    ("Name", "@name"),
+    ("State", "@state"),
+])
 
-    p = figure(plot_height=200, y_axis_type='log', x_axis_type='datetime', tools=[hover])
+p_usd_vs_date = figure(plot_height=200, y_axis_type='log', x_axis_type='datetime', tools=[hover_usd_vs_date])
 
-    for color, state in zip(COLORS, STATES):
-        df_by_state = kickstarter_df_sub[kickstarter_df_sub.state == state]
-        data = {
-            'x': df_by_state['created_at'],
-            'y': df_by_state['usd_pledged'],
-            'name': df_by_state['name'],
-            'state': [state] * len(df_by_state),
-        }
-        source = ColumnDataSource(data=data)
-        p.circle(x='x', y='y', line_color='white', fill_color=color, alpha=0.7, size=15, legend=state, source=source)
-    p.xaxis.axis_label = 'Date'
-    p.yaxis.axis_label = 'USD pledged'
-    # See http://bokeh.pydata.org/en/latest/docs/reference/models/formatters.html for all formatters
-    p.yaxis.formatter = NumeralTickFormatter(format='0a')
-    p.legend.click_policy = 'hide'
-    p.legend.location = "top_left"
-    return p
+sources_usd_vs_date = {}
+
+for color, state in zip(COLORS, STATES):
+    df_by_state = kickstarter_df_sub[kickstarter_df_sub.state == state]
+    data = {
+        'x': df_by_state['created_at'],
+        'y': df_by_state['usd_pledged'],
+        'name': df_by_state['name'],
+        'state': [state] * len(df_by_state),
+    }
+    source = ColumnDataSource(data=data)
+    sources_usd_vs_date[state] = source
+
+    p_usd_vs_date.circle(x='x', y='y', line_color='white', fill_color=color, alpha=0.7, size=15, legend=state, source=source)
+
+p_usd_vs_date.xaxis.axis_label = 'Date'
+p_usd_vs_date.yaxis.axis_label = 'USD pledged'
+# See http://bokeh.pydata.org/en/latest/docs/reference/models/formatters.html for all formatters
+p_usd_vs_date.yaxis.formatter = NumeralTickFormatter(format='0a')
+p_usd_vs_date.legend.click_policy = 'hide'
+p_usd_vs_date.legend.location = "top_left"
 
 
 stacked_barchart_df = (
@@ -73,33 +87,31 @@ stacked_barchart_df = (
 )
 
 
-def get_barchart():
-    # Can't seem to be able to put the state in there or the number of student in the tooltip though
-    hover = HoverTool(tooltips=[
-        ("Category", "@categories"),
-    ])
-    data = {
-        'categories': CATEGORIES,
-    }
+# Can't seem to be able to put the state in there or the number of student in the tooltip though
+hover_num_categories = HoverTool(tooltips=[
+    ("Category", "@categories"),
+])
+data = {
+    'categories': CATEGORIES,
+}
 
-    # Sadly, I could not find a more efficient method to prepare a pandas array for a stacked bar chart
-    for state in STATES:
-        data[state] = [stacked_barchart_df.loc[category, state] for category in CATEGORIES]
+# Sadly, I could not find a more efficient method to prepare a pandas array for a stacked bar chart
+for state in STATES:
+    data[state] = [stacked_barchart_df.loc[category, state] for category in CATEGORIES]
 
-    source = ColumnDataSource(data=data)
-    p = figure(x_range=CATEGORIES, plot_height=200, tools=[hover])
-    p.vbar_stack(
-        STATES,
-        x='categories',
-        width=0.9,
-        color=COLORS,
-        source=source,
-        legend=[value(x) for x in STATES]
-    )
-    p.yaxis.axis_label = 'Number of projects'
-    return p
+source_num_categories = ColumnDataSource(data=data)
+p_num_categories = figure(x_range=CATEGORIES, plot_height=200, tools=[hover_num_categories])
+p_num_categories.vbar_stack(
+    STATES,
+    x='categories',
+    width=0.9,
+    color=COLORS,
+    source=source_num_categories,
+    legend=[value(x) for x in STATES]
+)
+p_num_categories.yaxis.axis_label = 'Number of projects'
 
 
-layout = column(title, select, get_scatterplot(), get_barchart(), sizing_mode='scale_width')
+layout = column(title, select, p_usd_vs_date, p_num_categories, sizing_mode='scale_width')
 
 curdoc().add_root(layout)
