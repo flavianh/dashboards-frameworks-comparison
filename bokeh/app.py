@@ -37,42 +37,18 @@ COLUMNS = ['launched_at', 'deadline', 'blurb', 'usd_pledged', 'state', 'spotligh
 COLORS = ['#7DFB6D', '#C7B815', '#D4752E', '#C7583F'][::-1]
 STATES = ['successful', 'suspended', 'failed', 'canceled'][::-1]
 
-title = Div(text='<h1 style="text-align: center">Kickstarter Dashboard</h1>')
 
+##############################################################
+#                                                            #
+#            I  N  T  E  R  A  C  T  I  O  N  S              #
+#                                                            #
+##############################################################
 
 
 def filter_categories(indexes):
-    if indexes == []:
-        categories_filtered = CATEGORIES
-    else:
-        categories_filtered = [CATEGORIES[ind] for ind in indexes]
+    categories_filtered = [CATEGORIES[ind] for ind in indexes] if indexes == [] else CATEGORIES
     update_num_categories_source(categories_filtered)
     update_usd_vs_date_source(categories_filtered)
-
-
-# This looks better than the multiselect widget
-select = CheckboxButtonGroup(labels=CATEGORIES)
-select.on_click(filter_categories)
-
-
-hover_usd_vs_date = HoverTool(tooltips=[
-    ("Name", "@name"),
-    ("State", "@state"),
-])
-
-p_usd_vs_date = figure(
-    plot_height=200,
-    y_axis_type='log',
-    x_axis_type='datetime',
-    tools=[hover_usd_vs_date, 'box_select', 'reset']
-)
-
-sources_usd_vs_date = {state: ColumnDataSource({
-    'x': [],
-    'y': [],
-    'name': [],
-    'state': [],
-}) for state in STATES}
 
 
 def update_usd_vs_date_source(categories=CATEGORIES):
@@ -87,26 +63,16 @@ def update_usd_vs_date_source(categories=CATEGORIES):
         }
         sources_usd_vs_date[state].data = data
 
-update_usd_vs_date_source()
 
-for color, state in zip(COLORS, STATES):
-    p_usd_vs_date.circle(
-        x='x',
-        y='y',
-        line_color='white',
-        fill_color=color,
-        alpha=0.7,
-        size=15,
-        legend=state,
-        source=sources_usd_vs_date[state]
-    )
-
-p_usd_vs_date.xaxis.axis_label = 'Date'
-p_usd_vs_date.yaxis.axis_label = 'USD pledged'
-# See http://bokeh.pydata.org/en/latest/docs/reference/models/formatters.html for all formatters
-p_usd_vs_date.yaxis.formatter = NumeralTickFormatter(format='0a')
-p_usd_vs_date.legend.click_policy = 'hide'
-p_usd_vs_date.legend.location = "top_left"
+def update_on_usd_vs_date_selection(event):
+    geometry = event.geometry
+    if geometry['type'] == 'rect':
+        x0 = datetime.datetime.fromtimestamp(geometry['x0'] / 1000)
+        x1 = datetime.datetime.fromtimestamp(geometry['x1'] / 1000)
+        y0 = geometry['y0']
+        y1 = geometry['y1']
+        sub_df = kickstarter_df[kickstarter_df.created_at.between(x0, x1) & kickstarter_df.usd_pledged.between(y0, y1)]
+        update_num_categories_source(source_num_categories.data['categories'], sub_df)
 
 
 def update_num_categories_source(categories=CATEGORIES, df=kickstarter_df):
@@ -131,29 +97,77 @@ def update_num_categories_source(categories=CATEGORIES, df=kickstarter_df):
     source_num_categories.data = data
 
 
-def update_on_selection(event):
-    geometry = event.geometry
-    if geometry['type'] == 'rect':
-        x0 = datetime.datetime.fromtimestamp(geometry['x0'] / 1000)
-        x1 = datetime.datetime.fromtimestamp(geometry['x1'] / 1000)
-        y0 = geometry['y0']
-        y1 = geometry['y1']
-        sub_df = kickstarter_df[kickstarter_df.created_at.between(x0, x1) & kickstarter_df.usd_pledged.between(y0, y1)]
-        update_num_categories_source(source_num_categories.data['categories'], sub_df)
+##############################################################
+#                                                            #
+#                   L  A  Y  O  U  T                         #
+#                                                            #
+##############################################################
 
+
+title = Div(text='<h1 style="text-align: center">Kickstarter Dashboard</h1>')
+
+# This looks better than the multiselect widget
+select = CheckboxButtonGroup(labels=CATEGORIES)
+select.on_click(filter_categories)
+
+hover_usd_vs_date = HoverTool(tooltips=[
+    ("Name", "@name"),
+    ("State", "@state"),
+])
+
+p_usd_vs_date = figure(
+    plot_height=200,
+    y_axis_type='log',
+    x_axis_type='datetime',
+    tools=[hover_usd_vs_date, 'box_select', 'reset']
+)
+
+sources_usd_vs_date = {state: ColumnDataSource({
+    'x': [],
+    'y': [],
+    'name': [],
+    'state': [],
+}) for state in STATES}
+
+update_usd_vs_date_source()
+
+for color, state in zip(COLORS, STATES):
+    p_usd_vs_date.circle(
+        x='x',
+        y='y',
+        line_color='white',
+        fill_color=color,
+        alpha=0.7,
+        size=15,
+        legend=state,
+        source=sources_usd_vs_date[state]
+    )
+
+p_usd_vs_date.xaxis.axis_label = 'Date'
+p_usd_vs_date.yaxis.axis_label = 'USD pledged'
+# See http://bokeh.pydata.org/en/latest/docs/reference/models/formatters.html for all formatters
+p_usd_vs_date.yaxis.formatter = NumeralTickFormatter(format='0a')
+p_usd_vs_date.legend.click_policy = 'hide'
+p_usd_vs_date.legend.location = "top_left"
 
 p_usd_vs_date.on_event(Reset, lambda _: update_num_categories_source())
-p_usd_vs_date.on_event(SelectionGeometry, update_on_selection)
+p_usd_vs_date.on_event(SelectionGeometry, update_on_usd_vs_date_selection)
 
+
+source_num_categories = ColumnDataSource()
 
 # Can't seem to be able to put the state in there or the number of student in the tooltip though
 hover_num_categories = HoverTool(tooltips=[
     ("Category", "@categories"),
 ])
 
-source_num_categories = ColumnDataSource()
 update_num_categories_source()
-p_num_categories = figure(x_range=CATEGORIES, plot_height=200, tools=[hover_num_categories])
+
+p_num_categories = figure(
+    x_range=CATEGORIES,
+    plot_height=200,
+    tools=[hover_num_categories]
+)
 p_num_categories.vbar_stack(
     STATES,
     x='categories',
@@ -164,7 +178,14 @@ p_num_categories.vbar_stack(
 )
 p_num_categories.yaxis.axis_label = 'Number of projects'
 
-
 layout = column(title, select, p_usd_vs_date, p_num_categories, sizing_mode='scale_width')
+
+
+##############################################################
+#                                                            #
+#                      M  A  I  N                            #
+#                                                            #
+##############################################################
+
 
 curdoc().add_root(layout)
