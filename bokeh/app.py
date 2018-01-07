@@ -42,7 +42,8 @@ def filter_categories(indexes):
         categories_filtered = CATEGORIES
     else:
         categories_filtered = [CATEGORIES[ind] for ind in indexes]
-    print(categories_filtered)
+    update_num_categories_source(categories_filtered)
+    update_usd_vs_date_source(categories_filtered)
 
 
 # This looks better than the multiselect widget
@@ -57,20 +58,39 @@ hover_usd_vs_date = HoverTool(tooltips=[
 
 p_usd_vs_date = figure(plot_height=200, y_axis_type='log', x_axis_type='datetime', tools=[hover_usd_vs_date])
 
-sources_usd_vs_date = {}
+sources_usd_vs_date = {state: ColumnDataSource({
+    'x': [],
+    'y': [],
+    'name': [],
+    'state': [],
+}) for state in STATES}
+
+
+def update_usd_vs_date_source(categories=CATEGORIES):
+    df_categories = kickstarter_df_sub[kickstarter_df_sub.broader_category.isin(categories)]
+    for color, state in zip(COLORS, STATES):
+        df_by_state = df_categories[df_categories.state == state]
+        data = {
+            'x': df_by_state['created_at'],
+            'y': df_by_state['usd_pledged'],
+            'name': df_by_state['name'],
+            'state': [state] * len(df_by_state),
+        }
+        sources_usd_vs_date[state].data = data
+
+update_usd_vs_date_source()
 
 for color, state in zip(COLORS, STATES):
-    df_by_state = kickstarter_df_sub[kickstarter_df_sub.state == state]
-    data = {
-        'x': df_by_state['created_at'],
-        'y': df_by_state['usd_pledged'],
-        'name': df_by_state['name'],
-        'state': [state] * len(df_by_state),
-    }
-    source = ColumnDataSource(data=data)
-    sources_usd_vs_date[state] = source
-
-    p_usd_vs_date.circle(x='x', y='y', line_color='white', fill_color=color, alpha=0.7, size=15, legend=state, source=source)
+    p_usd_vs_date.circle(
+        x='x',
+        y='y',
+        line_color='white',
+        fill_color=color,
+        alpha=0.7,
+        size=15,
+        legend=state,
+        source=sources_usd_vs_date[state]
+    )
 
 p_usd_vs_date.xaxis.axis_label = 'Date'
 p_usd_vs_date.yaxis.axis_label = 'USD pledged'
@@ -91,15 +111,21 @@ stacked_barchart_df = (
 hover_num_categories = HoverTool(tooltips=[
     ("Category", "@categories"),
 ])
-data = {
-    'categories': CATEGORIES,
-}
 
-# Sadly, I could not find a more efficient method to prepare a pandas array for a stacked bar chart
-for state in STATES:
-    data[state] = [stacked_barchart_df.loc[category, state] for category in CATEGORIES]
 
-source_num_categories = ColumnDataSource(data=data)
+def update_num_categories_source(categories=CATEGORIES):
+    data = {
+        'categories': categories,
+    }
+
+    # Sadly, I could not find a more efficient method to prepare a pandas array for a stacked bar chart
+    for state in STATES:
+        data[state] = [stacked_barchart_df.loc[category, state] for category in categories]
+    source_num_categories.data = data
+
+
+source_num_categories = ColumnDataSource()
+update_num_categories_source()
 p_num_categories = figure(x_range=CATEGORIES, plot_height=200, tools=[hover_num_categories])
 p_num_categories.vbar_stack(
     STATES,
