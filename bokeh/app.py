@@ -56,7 +56,12 @@ hover_usd_vs_date = HoverTool(tooltips=[
     ("State", "@state"),
 ])
 
-p_usd_vs_date = figure(plot_height=200, y_axis_type='log', x_axis_type='datetime', tools=[hover_usd_vs_date])
+p_usd_vs_date = figure(
+    plot_height=200,
+    y_axis_type='log',
+    x_axis_type='datetime',
+    tools=[hover_usd_vs_date, 'box_zoom', 'reset']
+)
 
 sources_usd_vs_date = {state: ColumnDataSource({
     'x': [],
