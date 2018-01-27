@@ -161,4 +161,5 @@ def update_bar_chart(categories, relayoutData):
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
-    app.run_server(debug=True, host='0.0.0.0', port=port)
+    debug = os.environ.get('PRODUCTION') is None
+    app.run_server(debug=debug, host='0.0.0.0', port=port)
