@@ -1,6 +1,10 @@
-# Dashboards frameworks comparison
+# Bokeh vs Dash: a comparison by example
 
-A companion repository to my article that compares dashboard frameworks in python.
+![Dash is on the right-hand side](bokehvsdash.png)
+
+A companion repository to [my article that compares Bokeh to Dash](https://blog.sicara.com/bokeh-dash-best-dashboard-framework-python-shiny-alternative-c5b576375f7f).
+
+Instructions on how to run the code are in the article.
 
 To deploy on Heroku use:
 
